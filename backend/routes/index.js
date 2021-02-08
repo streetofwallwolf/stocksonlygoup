@@ -30,13 +30,30 @@ router.get('/stocks/:symbol', async function (req, res, next) {
         price = prices[symbol];
     }
 
-    res.send({price, symbol});
+    res.render('index', {title: symbol, price, symbol});
 });
 
-setInterval(() => {
-    Object.keys(prices).forEach(async (symbol) => {
-        prices[symbol] = await getStockPrice(symbol);
+router.get('/stocks/streaming/:symbol', (req, res) => {
+    const {symbol} = req.params;
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
     });
-}, 1000 * 60);
+    res.flushHeaders();
+
+    const interval = setInterval(async () => {
+        const price = await getStockPrice(symbol);
+        prices[symbol] = price;
+        res.write("id: " + Date.now() + "\ndata: " + JSON.stringify({price, symbol}) + "\n\n");
+    }, 1000);
+
+    res.on('close', () => {
+        clearInterval(interval);
+        res.end();
+    });
+});
 
 module.exports = router;

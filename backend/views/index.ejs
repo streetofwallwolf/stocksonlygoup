@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
-    <p>The price for <%= symbol %> is <%= price %></p>
-  </body>
+    <script>
+        const es = new EventSource('http://localhost:3000/stocks/streaming/GME');
+
+        const listener = function (event) {
+            const type = event.type;
+
+            window.console.log(`${type}: ${event.data || es.url}`);
+
+            if (type === 'result') {
+                es.close();
+            }
+        };
+
+        es.addEventListener('open', listener);
+        es.addEventListener('message', listener);
+        es.addEventListener('error', listener);
+        es.addEventListener('result', listener);
+    </script>
+</head>
+<body>
+<h1><%= title %></h1>
+<p>Price: <%= price %></p>
+</body>
 </html>
